@@ -1,0 +1,7 @@
+ifcopenshell>=0.8.5
+ifctester
+xlsxwriter
+jinja2
+tqdm
+pywebview>=6.2
+pythonnet>=3.0.4

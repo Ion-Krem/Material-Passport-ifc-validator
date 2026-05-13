@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>IFC Material Passport Validation Report</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --card-bg: #f9fafb;
+    --green: #16a34a;
+    --green-bg: #dcfce7;
+    --amber: #d97706;
+    --amber-bg: #fef3c7;
+    --red: #dc2626;
+    --red-bg: #fee2e2;
+    --blue: #2563eb;
+    --blue-bg: #dbeafe;
+    --header-bg: #1e3a8a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--header-bg);
+    color: white;
+    padding: 24px 32px;
+  }
+  header h1 { margin: 0 0 4px 0; font-size: 22px; font-weight: 600; }
+  header .timestamp { margin: 0; opacity: 0.85; font-size: 13px; }
+  main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
+
+  details.file-report {
+    margin-bottom: 32px;
+    padding: 0 0 24px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  details.file-report:last-child { border-bottom: none; }
+  details.file-report > summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 14px 0;
+    user-select: none;
+  }
+  details.file-report > summary::-webkit-details-marker { display: none; }
+  details.file-report > summary::before {
+    content: '▼';
+    display: inline-block;
+    margin-right: 10px;
+    font-size: 10px;
+    transition: transform 0.15s;
+    color: var(--muted);
+  }
+  details.file-report:not([open]) > summary::before { transform: rotate(-90deg); }
+  details.file-report > summary h2 {
+    display: inline;
+    font-size: 18px;
+    margin: 0;
+    word-break: break-all;
+  }
+  .summary-pills {
+    display: inline-flex;
+    gap: 6px;
+    margin-left: 12px;
+    font-size: 12px;
+    font-weight: normal;
+    color: var(--muted);
+  }
+  .summary-pills .pill {
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+  }
+  .summary-pills .pill.error { color: var(--red); border-color: var(--red-bg); background: var(--red-bg); }
+  .summary-pills .pill.warning { color: var(--amber); border-color: var(--amber-bg); background: var(--amber-bg); }
+  .summary-pills .pill.info { color: var(--blue); border-color: var(--blue-bg); background: var(--blue-bg); }
+  .meta { color: var(--muted); font-size: 13px; margin-bottom: 16px; }
+
+  .summary-cards { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .card {
+    flex: 1;
+    min-width: 140px;
+    padding: 12px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .card .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .card .value { font-size: 22px; font-weight: 600; margin-top: 2px; }
+  .card.error .value { color: var(--red); }
+  .card.warning .value { color: var(--amber); }
+  .card.info .value { color: var(--blue); }
+  .card.neutral .value { color: var(--text); }
+
+  .pass-rate {
+    margin-bottom: 24px;
+    padding: 12px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .pass-rate-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .pass-rate-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .pass-rate-value { font-size: 18px; font-weight: 600; }
+  .bar {
+    width: 100%;
+    height: 10px;
+    background: var(--border);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+  .bar .fill { height: 100%; transition: width 0.3s; }
+  .fill.green { background: var(--green); }
+  .fill.amber { background: var(--amber); }
+  .fill.red { background: var(--red); }
+
+  h3 { font-size: 15px; margin: 24px 0 12px 0; }
+
+  .check-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .check-card {
+    padding: 12px 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .check-card .name { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .check-card .stat { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+
+  .filter-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 8px;
+    font-family: inherit;
+  }
+  .filter-input:focus { outline: 2px solid var(--header-bg); outline-offset: -2px; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  thead th {
+    background: var(--header-bg);
+    color: white;
+    text-align: left;
+    padding: 8px 10px;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+  }
+  thead th:hover { background: #1e40af; }
+  thead th .sort-indicator { opacity: 0.5; font-size: 10px; margin-left: 4px; }
+  tbody td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tbody tr.row-error { background: var(--red-bg); }
+  tbody tr.row-warning { background: var(--amber-bg); }
+  tbody tr.row-clean { background: transparent; }
+  .badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .badge.yes { background: var(--green-bg); color: var(--green); }
+  .badge.no { background: var(--red-bg); color: var(--red); }
+  td.mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; }
+
+  @media print {
+    body { font-size: 11px; }
+    header { padding: 12px 20px; }
+    main { padding: 12px 20px; max-width: none; }
+    details.file-report { page-break-before: always; margin-bottom: 0; border-bottom: none; }
+    details.file-report:first-of-type { page-break-before: auto; }
+    details.file-report > summary { cursor: default; padding: 8px 0; }
+    details.file-report > summary::before { display: none; }
+    details.file-report > * { display: revert !important; }
+    .filter-input { display: none; }
+    thead th { position: static; cursor: default; }
+    thead th .sort-indicator { display: none; }
+    tbody tr { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>IFC Material Passport Validation Report</h1>
+  <p class="timestamp">Generated {{ timestamp }}</p>
+</header>
+<main>
+{% for file in files %}
+<details class="file-report" data-file-index="{{ loop.index0 }}" open>
+  <summary>
+    <h2>{{ file.filename }}</h2>
+    {% if not file.load_error %}
+    <span class="summary-pills">
+      <span class="pill">{{ file.schema }}</span>
+      <span class="pill">{{ file.element_count }} elements</span>
+      {% if file.error_count %}<span class="pill error">{{ file.error_count }} errors</span>{% endif %}
+      {% if file.warning_count %}<span class="pill warning">{{ file.warning_count }} warnings</span>{% endif %}
+      {% if file.info_count %}<span class="pill info">{{ file.info_count }} info</span>{% endif %}
+    </span>
+    {% else %}
+    <span class="summary-pills"><span class="pill error">Load failed</span></span>
+    {% endif %}
+  </summary>
+  <div class="meta">
+    {% if file.load_error %}
+      <strong style="color: var(--red);">Failed to load:</strong> {{ file.load_error }}
+    {% else %}
+      Schema: <strong>{{ file.schema }}</strong> · Total elements: <strong>{{ file.element_count }}</strong>
+    {% endif %}
+  </div>
+
+  {% if not file.load_error %}
+  <div class="summary-cards">
+    <div class="card neutral">
+      <div class="label">Total Elements</div>
+      <div class="value">{{ file.element_count }}</div>
+    </div>
+    <div class="card error">
+      <div class="label">Errors</div>
+      <div class="value">{{ file.error_count }}</div>
+    </div>
+    <div class="card warning">
+      <div class="label">Warnings</div>
+      <div class="value">{{ file.warning_count }}</div>
+    </div>
+    <div class="card info">
+      <div class="label">Info</div>
+      <div class="value">{{ file.info_count }}</div>
+    </div>
+  </div>
+
+  <div class="pass-rate">
+    <div class="pass-rate-header">
+      <span class="pass-rate-label">Pass Rate (elements with no errors)</span>
+      <span class="pass-rate-value">{{ "%.1f"|format(file.pass_rate * 100) }}%</span>
+    </div>
+    <div class="bar"><div class="fill {{ file.pass_rate_class }}" style="width: {{ "%.1f"|format(file.pass_rate * 100) }}%"></div></div>
+  </div>
+
+  <h3>Check Breakdown</h3>
+  <div class="check-grid">
+    {% for check in file.check_stats %}
+    <div class="check-card">
+      <div class="name">{{ check.name }}</div>
+      <div class="stat">{{ check.passed }} / {{ check.total }} passed ({{ "%.1f"|format(check.percent) }}%)</div>
+      <div class="bar"><div class="fill {{ check.bar_class }}" style="width: {{ "%.1f"|format(check.percent) }}%"></div></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <h3>Element Details ({{ file.element_count }})</h3>
+  <input type="text" class="filter-input" placeholder="Filter elements..." data-target="elements-{{ loop.index0 }}">
+  <table id="elements-{{ loop.index0 }}">
+    <thead>
+      <tr>
+        <th>GlobalId</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Classification</th>
+        <th>Material</th>
+        <th>Picklist</th>
+        <th>Volume</th>
+        <th>Area</th>
+        <th>Phase</th>
+        <th>Issues</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for el in file.elements %}
+      <tr class="row-{{ el.row_class }}">
+        <td class="mono">{{ el.element_id }}</td>
+        <td>{{ el.element_name }}</td>
+        <td>{{ el.element_type }}</td>
+        <td>{{ el.classification_code or '—' }}</td>
+        <td>{{ el.material_name or '—' }}</td>
+        <td>
+          {% if el.picklist_status == 'match' %}<span class="badge yes">Match</span>
+          {% elif el.picklist_status == 'no_match' %}<span class="badge no">No match</span>
+          {% else %}<span style="color: var(--muted);">—</span>{% endif %}
+        </td>
+        <td><span class="badge {{ 'yes' if el.has_volume else 'no' }}">{{ 'Yes' if el.has_volume else 'No' }}</span></td>
+        <td><span class="badge {{ 'yes' if el.has_area else 'no' }}">{{ 'Yes' if el.has_area else 'No' }}</span></td>
+        <td>{{ el.phase or '—' }}</td>
+        <td>{{ el.issue_count }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+</details>
+{% endfor %}
+</main>
+<script>
+(function() {
+  document.querySelectorAll('.filter-input').forEach(function(input) {
+    input.addEventListener('input', function() {
+      var target = document.getElementById(input.dataset.target);
+      if (!target) return;
+      var q = input.value.toLowerCase();
+      target.querySelectorAll('tbody tr').forEach(function(tr) {
+        tr.style.display = tr.textContent.toLowerCase().indexOf(q) === -1 ? 'none' : '';
+      });
+    });
+  });
+  document.querySelectorAll('table thead th').forEach(function(th, idx) {
+    var ind = document.createElement('span');
+    ind.className = 'sort-indicator';
+    ind.textContent = '↕';
+    th.appendChild(ind);
+    th.dataset.sortDir = '';
+    th.addEventListener('click', function() {
+      var table = th.closest('table');
+      var tbody = table.tBodies[0];
+      var rows = Array.from(tbody.rows);
+      var dir = th.dataset.sortDir === 'asc' ? 'desc' : 'asc';
+      table.querySelectorAll('thead th').forEach(function(other) {
+        other.dataset.sortDir = '';
+        var i = other.querySelector('.sort-indicator');
+        if (i) i.textContent = '↕';
+      });
+      th.dataset.sortDir = dir;
+      ind.textContent = dir === 'asc' ? '↑' : '↓';
+      rows.sort(function(a, b) {
+        var av = a.cells[idx].textContent.trim();
+        var bv = b.cells[idx].textContent.trim();
+        var an = parseFloat(av), bn = parseFloat(bv);
+        if (!isNaN(an) && !isNaN(bn)) { return dir === 'asc' ? an - bn : bn - an; }
+        return dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+      rows.forEach(function(r) { tbody.appendChild(r); });
+    });
+  });
+})();
+</script>
+</body>
+</html>

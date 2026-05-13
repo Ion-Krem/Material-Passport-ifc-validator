@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>IFC Material Passport Validator</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --content-bg: #f3f4f6;
+    --text: #1f2937;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --card-bg: #ffffff;
+    --sidebar-bg: #111827;
+    --sidebar-text: #f3f4f6;
+    --sidebar-muted: #9ca3af;
+    --sidebar-active: #2563eb;
+    --green: #16a34a;
+    --green-bg: #dcfce7;
+    --amber: #d97706;
+    --amber-bg: #fef3c7;
+    --red: #dc2626;
+    --red-bg: #fee2e2;
+    --blue: #2563eb;
+    --blue-bg: #dbeafe;
+    --header-bg: #1e3a8a;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow: hidden;
+  }
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  .topbar {
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    padding: 10px 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #1f2937;
+    flex-shrink: 0;
+  }
+  .topbar-title { font-size: 13px; color: var(--sidebar-muted); }
+  .topbar-title strong { color: var(--sidebar-text); font-weight: 600; }
+  .back-btn-top {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 6px;
+    background: var(--sidebar-active);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background 0.12s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .back-btn-top:hover { background: #1d4ed8; }
+  .back-btn-top:active { transform: translateY(1px); }
+  .layout {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+  aside.sidebar {
+    width: 220px;
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .brand {
+    padding: 18px 18px 16px;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 1.3;
+    border-bottom: 1px solid #1f2937;
+  }
+  .brand small { display: block; color: var(--sidebar-muted); font-weight: normal; font-size: 11px; margin-top: 4px; }
+  nav.tabs { display: flex; flex-direction: column; padding: 12px 0; flex: 1; }
+  nav.tabs button {
+    background: transparent;
+    color: var(--sidebar-text);
+    border: none;
+    text-align: left;
+    padding: 10px 18px;
+    font: inherit;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  nav.tabs button:hover { background: #1f2937; }
+  nav.tabs button.active {
+    background: #1f2937;
+    border-left-color: var(--sidebar-active);
+    font-weight: 600;
+  }
+  nav.tabs .icon { font-size: 16px; line-height: 1; }
+  .sidebar-spacer { flex: 1; }
+  .about-link {
+    margin: 0;
+    padding: 12px 18px;
+    border-left: none !important;
+    border-top: 1px solid #1f2937;
+    font-size: 12px;
+    color: var(--sidebar-muted);
+    font-weight: 400;
+    background: transparent;
+  }
+  .about-link:hover { background: #1f2937; color: var(--sidebar-text); }
+  .about-link.active { background: #1f2937; color: var(--sidebar-text); font-weight: 500; }
+  .exit-link {
+    margin: 14px;
+    padding: 10px 14px;
+    border: none;
+    background: #7f1d1d;
+    color: white;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.12s;
+  }
+  .exit-link:hover { background: #991b1b; }
+  .exit-link:active { transform: translateY(1px); }
+
+  main.content {
+    flex: 1;
+    overflow-y: auto;
+    background: var(--content-bg);
+    padding: 24px 28px;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  h2 { font-size: 18px; margin: 0; font-weight: 600; }
+  h3 { font-size: 14px; margin: 24px 0 12px 0; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .toolbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    background: var(--card-bg);
+    color: var(--text);
+    border-color: var(--border);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .btn:hover { background: #f9fafb; }
+  .btn.primary { background: var(--sidebar-active); color: white; border-color: var(--sidebar-active); }
+  .btn.primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+  .btn:active { transform: translateY(1px); }
+  .btn-icon { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .severity-legend {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    padding: 10px 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .severity-legend .item { display: flex; align-items: flex-start; gap: 6px; flex: 1; min-width: 220px; }
+  .severity-legend .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .severity-legend .dot.error { background: var(--red); }
+  .severity-legend .dot.warning { background: var(--amber); }
+  .severity-legend .dot.info { background: var(--blue); }
+  .severity-legend strong { font-weight: 600; }
+  .severity-legend .desc { color: var(--muted); }
+
+  .row-color-legend {
+    display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 16px;
+    padding: 8px 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .row-color-legend > span { display: inline-flex; align-items: center; }
+  .row-color-legend .swatch {
+    display: inline-block;
+    width: 14px; height: 12px;
+    border-radius: 2px;
+    border: 1px solid var(--border);
+    vertical-align: -2px;
+    margin-right: 4px;
+  }
+  .row-color-legend .swatch.err { background: var(--red-bg); border-color: var(--red-bg); }
+  .row-color-legend .swatch.warn { background: var(--amber-bg); border-color: var(--amber-bg); }
+  .row-color-legend .swatch.clean { background: white; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .card {
+    padding: 14px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .card .value { font-size: 24px; font-weight: 600; margin-top: 4px; }
+  .card.error .value { color: var(--red); }
+  .card.warning .value { color: var(--amber); }
+  .card.info .value { color: var(--blue); }
+  .card.pass .value { color: var(--green); }
+
+  .chart-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .chart-card canvas { max-height: 320px; }
+
+  .models-card { padding: 0; }
+  .models-table-wrap { max-height: 360px; overflow-y: auto; overflow-x: auto; border: none; border-radius: 8px; }
+  .models-table { font-size: 13px; }
+  .models-table thead th { background: #f9fafb; color: var(--text); border-bottom: 1px solid var(--border); cursor: default; }
+  .models-table tbody tr.models-row { cursor: pointer; transition: background 0.1s; }
+  .models-table tbody tr.models-row:hover { background: #eff6ff; }
+  .models-table tbody td { padding: 10px 12px; }
+  .status-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status-badge.pass { background: var(--green-bg); color: var(--green); }
+  .status-badge.warn { background: var(--amber-bg); color: var(--amber); }
+  .status-badge.fail { background: var(--red-bg); color: var(--red); }
+  .count-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 24px;
+    text-align: center;
+  }
+  .count-badge.error { background: var(--red-bg); color: var(--red); }
+  .count-badge.warning { background: var(--amber-bg); color: var(--amber); }
+  .count-badge.info { background: var(--blue-bg); color: var(--blue); }
+  .count-badge.zero { background: #f3f4f6; color: var(--muted); }
+
+  details.file-report {
+    margin-bottom: 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0 16px;
+  }
+  details.file-report > summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 14px 0;
+    user-select: none;
+  }
+  details.file-report > summary::-webkit-details-marker { display: none; }
+  details.file-report > summary::before {
+    content: '▼';
+    display: inline-block;
+    margin-right: 10px;
+    font-size: 10px;
+    transition: transform 0.15s;
+    color: var(--muted);
+  }
+  details.file-report:not([open]) > summary::before { transform: rotate(-90deg); }
+  details.file-report > summary h4 {
+    display: inline;
+    font-size: 15px;
+    margin: 0;
+    word-break: break-all;
+  }
+  details.file-report > .body { padding-bottom: 16px; }
+  .summary-pills { display: inline-flex; gap: 6px; margin-left: 12px; font-size: 12px; font-weight: normal; color: var(--muted); }
+  .summary-pills .pill { padding: 2px 8px; border-radius: 10px; background: var(--content-bg); border: 1px solid var(--border); }
+  .summary-pills .pill.error { color: var(--red); border-color: var(--red-bg); background: var(--red-bg); }
+  .summary-pills .pill.warning { color: var(--amber); border-color: var(--amber-bg); background: var(--amber-bg); }
+  .summary-pills .pill.info { color: var(--blue); border-color: var(--blue-bg); background: var(--blue-bg); }
+
+  .filter-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    margin-bottom: 8px;
+    font-family: inherit;
+  }
+  .filter-input:focus { outline: 2px solid var(--header-bg); outline-offset: -2px; }
+  .table-wrap { overflow: auto; max-height: 500px; border: 1px solid var(--border); border-radius: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th { background: var(--header-bg); color: white; text-align: left; padding: 8px 10px; font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap; position: sticky; top: 0; z-index: 1; }
+  thead th:hover { background: #1e40af; }
+  thead th .sort-indicator { opacity: 0.5; font-size: 10px; margin-left: 4px; }
+  tbody td { padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr.row-error { background: var(--red-bg); }
+  tbody tr.row-warning { background: var(--amber-bg); }
+  .badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+  .badge.yes { background: var(--green-bg); color: var(--green); }
+  .badge.no { background: var(--red-bg); color: var(--red); }
+  .badge.na { color: var(--muted); }
+  td.mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 11px; }
+
+  /* Expand-on-click for element rows */
+  .element-table th.th-expand { width: 28px; padding: 8px 4px; cursor: default; }
+  .element-table th.th-expand:hover { background: var(--header-bg); }
+  .chevron-cell { width: 28px; padding-right: 0 !important; padding-left: 10px !important; }
+  .chevron {
+    display: inline-block;
+    font-size: 9px;
+    color: var(--muted);
+    transition: transform 0.15s;
+  }
+  .element-row.has-issues { cursor: pointer; }
+  .element-row.has-issues:hover { background: #eff6ff; }
+  .element-row.has-issues.row-error:hover { background: #fecaca; }
+  .element-row.has-issues.row-warning:hover { background: #fde68a; }
+  .element-row.expanded .chevron { transform: rotate(90deg); color: var(--text); }
+
+  .issue-detail-row > td { padding: 0; background: #f8fafc; border-top: 1px dashed var(--border); }
+  .issue-list {
+    list-style: none;
+    margin: 0;
+    padding: 12px 16px 14px 44px;
+    display: grid;
+    gap: 6px;
+  }
+  .issue-item {
+    display: grid;
+    grid-template-columns: 78px 180px 1fr;
+    gap: 12px;
+    align-items: start;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .sev-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-align: center;
+  }
+  .sev-badge.sev-error { background: var(--red-bg); color: var(--red); }
+  .sev-badge.sev-warning { background: var(--amber-bg); color: var(--amber); }
+  .sev-badge.sev-info { background: var(--blue-bg); color: var(--blue); }
+  .issue-check { font-weight: 600; color: var(--text); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 10.5px; }
+  .issue-message { color: #4b5563; }
+
+  .empty { color: var(--muted); padding: 40px; text-align: center; }
+
+  .about-content {
+    max-width: 560px;
+    margin: 40px auto;
+    text-align: center;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 48px 40px;
+  }
+  .about-logo {
+    width: 88px; height: 88px;
+    margin: 0 auto 20px;
+    background: linear-gradient(180deg, #2563eb 0%, #0d9488 100%);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 28px; color: white; letter-spacing: 1px;
+    box-shadow: 0 14px 40px -10px rgba(37,99,235,0.4);
+  }
+  .about-title { font-size: 20px; margin: 0 0 4px 0; font-weight: 600; }
+  .about-version { color: var(--muted); margin: 0 0 22px 0; font-size: 13px; }
+  .about-desc { color: #374151; margin: 0 0 24px 0; line-height: 1.65; text-align: left; }
+  .about-meta {
+    text-align: left;
+    margin: 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 14px;
+    font-size: 13px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+  .about-meta dt { color: var(--muted); font-weight: 500; }
+  .about-meta dd { margin: 0; }
+  .about-meta a { color: var(--sidebar-active); text-decoration: none; }
+  .about-meta a:hover { text-decoration: underline; }
+  .about-howto-title {
+    text-align: left;
+    margin: 32px 0 10px 0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+  }
+  .about-howto { text-align: left; padding-left: 22px; margin: 0; line-height: 1.7; color: #374151; }
+  .about-howto li { margin-bottom: 6px; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #111827;
+    color: white;
+    padding: 12px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    box-shadow: 0 8px 32px -4px rgba(0,0,0,0.3);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s;
+    z-index: 1000;
+    max-width: 420px;
+    word-break: break-all;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { background: var(--red); }
+  .toast.success { background: var(--green); }
+
+  @media print {
+    body, .app { overflow: visible; background: white; height: auto; }
+    .topbar, aside.sidebar, .toolbar-actions, .new-validation-btn,
+    .exit-link, .filter-input, .toast { display: none !important; }
+    .layout { display: block; height: auto; overflow: visible; }
+    main.content { padding: 0; background: white; overflow: visible; }
+    .tab-panel { display: block !important; page-break-before: always; }
+    .tab-panel:first-of-type { page-break-before: auto; }
+    #tab-about { display: none !important; }
+    details.file-report { page-break-inside: avoid; }
+    details.file-report > .body, details.file-report { display: block !important; }
+    details.file-report > summary::before { display: none; }
+    .table-wrap, .models-table-wrap { max-height: none !important; overflow: visible; }
+    thead th { position: static; }
+    .issue-detail-row[hidden] { display: table-row !important; }
+    .element-row .chevron { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="topbar-title"><strong>{{ totals.files }} file(s) validated</strong> · {{ timestamp }}</div>
+  <button class="back-btn-top" id="topbar-new-validation"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>New Validation</button>
+</header>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">
+      IFC Material Passport Validator
+      <small>{{ files|length }} file(s) · {{ timestamp }}</small>
+    </div>
+    <nav class="tabs">
+      <button class="tab-btn active" data-target="tab-dashboard"><span class="icon">📊</span> Dashboard</button>
+      <button class="tab-btn" data-target="tab-details"><span class="icon">📋</span> Details</button>
+    </nav>
+    <div class="sidebar-spacer"></div>
+    <button class="about-link tab-btn" data-target="tab-about">ℹ About</button>
+    <button class="exit-link" id="exit-btn">✕ Exit</button>
+  </aside>
+  <main class="content">
+
+    <section id="tab-dashboard" class="tab-panel active">
+      <div class="toolbar">
+        <h2>Validation Overview</h2>
+        <div class="toolbar-actions">
+          <button class="btn primary" id="export-excel"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>Export Excel</button>
+          <button class="btn" id="export-pdf"><svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>Export PDF</button>
+        </div>
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <div class="label">Files</div>
+          <div class="value">{{ totals.files }}</div>
+        </div>
+        <div class="card">
+          <div class="label">Total Elements</div>
+          <div class="value">{{ totals.elements }}</div>
+        </div>
+        <div class="card error">
+          <div class="label">Errors</div>
+          <div class="value">{{ totals.errors }}</div>
+        </div>
+        <div class="card warning">
+          <div class="label">Warnings</div>
+          <div class="value">{{ totals.warnings }}</div>
+        </div>
+        <div class="card info">
+          <div class="label">Info</div>
+          <div class="value">{{ totals.info }}</div>
+        </div>
+        <div class="card pass">
+          <div class="label">Overall Pass Rate</div>
+          <div class="value">{{ "%.1f"|format(totals.pass_rate * 100) }}%</div>
+        </div>
+      </div>
+
+      <h3>Loaded Models</h3>
+      <div class="chart-card models-card">
+        <div class="table-wrap models-table-wrap">
+          <table class="models-table">
+            <thead>
+              <tr>
+                <th>File Name</th>
+                <th>Schema</th>
+                <th>Elements</th>
+                <th>Errors</th>
+                <th>Warnings</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for file in files %}
+              <tr class="models-row" data-file-index="{{ loop.index0 }}" title="Click to view details">
+                <td>{{ file.filename }}</td>
+                <td>{{ file.schema or '—' }}</td>
+                <td>{{ file.element_count }}</td>
+                <td><span class="count-badge {{ 'error' if file.error_count else 'zero' }}">{{ file.error_count }} {{ 'error' if file.error_count == 1 else 'errors' }}</span></td>
+                <td><span class="count-badge {{ 'warning' if file.warning_count else 'zero' }}">{{ file.warning_count }} {{ 'warning' if file.warning_count == 1 else 'warnings' }}</span></td>
+                <td>
+                  {% if file.load_error %}<span class="status-badge fail">Load Failed</span>
+                  {% elif file.error_count %}<span class="status-badge fail">Fail</span>
+                  {% elif file.warning_count %}<span class="status-badge warn">Pass with Warnings</span>
+                  {% else %}<span class="status-badge pass">Pass</span>{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <h3>Pass Rate by File</h3>
+      <div class="chart-card">
+        <canvas id="passRateChart"></canvas>
+      </div>
+
+      <h3>Issue Distribution by Check Type</h3>
+      <div class="chart-card">
+        <canvas id="issueDistChart"></canvas>
+      </div>
+
+      <h3>Severity Breakdown by File</h3>
+      <div class="chart-card">
+        <canvas id="severityStackChart"></canvas>
+      </div>
+    </section>
+
+    <section id="tab-details" class="tab-panel">
+      <h2 style="margin-bottom: 18px;">Per-File Details</h2>
+
+      <div class="severity-legend">
+        <div class="item"><span class="dot error"></span><div><strong>Error</strong><br><span class="desc">Will cause import failure or incorrect analysis (e.g. missing material, missing volume).</span></div></div>
+        <div class="item"><span class="dot warning"></span><div><strong>Warning</strong><br><span class="desc">May reduce quality of analysis (e.g. unknown material name, proxy elements).</span></div></div>
+        <div class="item"><span class="dot info"></span><div><strong>Info</strong><br><span class="desc">Optional enhancement (e.g. missing Pset_Madaster, missing phase).</span></div></div>
+      </div>
+
+      <div class="row-color-legend">
+        Row colors: <span><span class="swatch err"></span> red = has errors</span>
+        <span><span class="swatch warn"></span> amber = warnings only</span>
+        <span><span class="swatch clean"></span> white = clean</span>
+      </div>
+
+      {% if not files %}
+      <div class="empty">No files loaded.</div>
+      {% endif %}
+      {% for file in files %}
+      <details class="file-report" data-file-index="{{ loop.index0 }}" {% if loop.first %}open{% endif %}>
+        <summary>
+          <h4>{{ file.filename }}</h4>
+          {% if not file.load_error %}
+          <span class="summary-pills">
+            <span class="pill">{{ file.schema }}</span>
+            <span class="pill">{{ file.element_count }} elements</span>
+            {% if file.error_count %}<span class="pill error">{{ file.error_count }} {{ 'error' if file.error_count == 1 else 'errors' }}</span>{% endif %}
+            {% if file.warning_count %}<span class="pill warning">{{ file.warning_count }} {{ 'warning' if file.warning_count == 1 else 'warnings' }}</span>{% endif %}
+            {% if file.info_count %}<span class="pill info">{{ file.info_count }} info</span>{% endif %}
+          </span>
+          {% else %}
+          <span class="summary-pills"><span class="pill error">Load failed</span></span>
+          {% endif %}
+        </summary>
+        <div class="body">
+          {% if file.load_error %}
+          <div style="color: var(--red);"><strong>Failed to load:</strong> {{ file.load_error }}</div>
+          {% else %}
+          <input type="text" class="filter-input" placeholder="Filter elements..." data-target="elements-{{ loop.index0 }}">
+          <div class="table-wrap">
+            <table id="elements-{{ loop.index0 }}" class="element-table">
+              <thead>
+                <tr>
+                  <th class="th-expand"></th>
+                  <th>GlobalId</th>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Classification</th>
+                  <th>Material</th>
+                  <th>Picklist</th>
+                  <th>Volume</th>
+                  <th>Area</th>
+                  <th>Phase</th>
+                  <th>Issues</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for el in file.elements %}
+                <tr class="row-{{ el.row_class }} element-row{% if el.issues %} has-issues{% endif %}">
+                  <td class="chevron-cell">{% if el.issues %}<span class="chevron">▶</span>{% endif %}</td>
+                  <td class="mono">{{ el.element_id }}</td>
+                  <td>{{ el.element_name }}</td>
+                  <td>{{ el.element_type }}</td>
+                  <td>{{ el.classification_code or '—' }}</td>
+                  <td>{{ el.material_name or '—' }}</td>
+                  <td>
+                    {% if el.picklist_status == 'match' %}<span class="badge yes">Match</span>
+                    {% elif el.picklist_status == 'no_match' %}<span class="badge no">No match</span>
+                    {% else %}<span class="badge na">—</span>{% endif %}
+                  </td>
+                  <td><span class="badge {{ 'yes' if el.has_volume else 'no' }}">{{ 'Yes' if el.has_volume else 'No' }}</span></td>
+                  <td><span class="badge {{ 'yes' if el.has_area else 'no' }}">{{ 'Yes' if el.has_area else 'No' }}</span></td>
+                  <td>{{ el.phase or '—' }}</td>
+                  <td>{{ el.issue_count }}</td>
+                </tr>
+                {% if el.issues %}
+                <tr class="issue-detail-row" hidden>
+                  <td colspan="11" class="issue-detail-cell">
+                    <ul class="issue-list">
+                      {% for issue in el.issues %}
+                      <li class="issue-item">
+                        <span class="sev-badge sev-{{ issue.severity|lower }}">{{ issue.severity }}</span>
+                        <span class="issue-check">{{ issue.check }}</span>
+                        <span class="issue-message">{{ issue.message }}</span>
+                      </li>
+                      {% endfor %}
+                    </ul>
+                  </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+      </details>
+      {% endfor %}
+    </section>
+
+    <section id="tab-about" class="tab-panel">
+      <div class="about-content">
+        <div class="about-logo">IFC</div>
+        <h2 class="about-title">IFC Material Passport Validator</h2>
+        <p class="about-version">Version 1.0.0</p>
+        <p class="about-desc">Standalone validation tool for IFC building information models. Checks completeness of classification codes, base quantities, materials, and property sets required for material passport analysis and whole life carbon reporting.</p>
+        <dl class="about-meta">
+          <dt>Created by</dt><dd>Ioannis Kremmydas</dd>
+          <dt>Built with</dt><dd>Python, IfcOpenShell, Chart.js</dd>
+          <dt>Reference</dt><dd><a href="https://docs.madaster.com" class="external">Madaster Documentation</a></dd>
+        </dl>
+
+        <h3 class="about-howto-title">How to Use</h3>
+        <ol class="about-howto">
+          <li><strong>Start a validation.</strong> Click "↩ New Validation" or launch the app.</li>
+          <li><strong>Pick your files.</strong> Select a folder containing IFC files, or pick individual files.</li>
+          <li><strong>Wait for processing.</strong> The progress bar shows each file as it completes.</li>
+          <li><strong>Review the Dashboard.</strong> Summary cards, loaded models, and charts give an overview of all models.</li>
+          <li><strong>Open the Details tab.</strong> See per-element issues with sortable, filterable tables.</li>
+          <li><strong>Export.</strong> Save as Excel for spreadsheet review, or PDF to send to trades.</li>
+        </ol>
+      </div>
+    </section>
+
+  </main>
+</div>
+</div>
+<div id="toast" class="toast"></div>
+
+<script>{{ chart_js|safe }}</script>
+<script>
+(function() {
+  const DATA = {{ chart_data|tojson }};
+
+  // ---- Disable browser-style back navigation ----
+  try {
+    history.pushState(null, '', location.href);
+    window.addEventListener('popstate', () => {
+      history.pushState(null, '', location.href);
+    });
+    window.addEventListener('keydown', e => {
+      if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) e.preventDefault();
+      if (e.key === 'Backspace' && !/^(input|textarea)$/i.test(e.target.tagName)) e.preventDefault();
+    });
+  } catch (_) {}
+
+  // ---- Tab switching ----
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.target).classList.add('active');
+    });
+  });
+
+  // ---- Toast ----
+  const toast = document.getElementById('toast');
+  let toastTimer = null;
+  function showToast(msg, kind) {
+    toast.textContent = msg;
+    toast.className = 'toast show' + (kind ? ' ' + kind : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.className = 'toast'; }, 4500);
+  }
+
+  // ---- pywebview readiness wrapper ----
+  // Buttons remain visible at all times. Handlers are attached when window.pywebview.api is ready.
+  function whenPywebviewReady(fn) {
+    if (window.pywebview && window.pywebview.api) { fn(); return; }
+    window.addEventListener('pywebviewready', fn, {once: true});
+  }
+
+  whenPywebviewReady(() => {
+    const api = window.pywebview.api;
+
+    const topNew = document.getElementById('topbar-new-validation');
+    if (topNew) topNew.addEventListener('click', () => api.new_validation());
+
+    const excelBtn = document.getElementById('export-excel');
+    if (excelBtn) excelBtn.addEventListener('click', async () => {
+      try {
+        const path = await api.export_excel();
+        if (path) showToast('Excel saved: ' + path, 'success');
+      } catch (e) { showToast('Export failed: ' + e, 'error'); }
+    });
+
+    const exitBtn = document.getElementById('exit-btn');
+    if (exitBtn) exitBtn.addEventListener('click', () => {
+      if (confirm('Quit IFC Material Passport Validator?')) api.exit_app();
+    });
+
+    document.querySelectorAll('a.external').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        api.open_external(a.href);
+      });
+    });
+  });
+
+  // ---- Loaded Models row click → Details tab, scroll to file ----
+  function showFileDetails(idx) {
+    const detailsBtn = document.querySelector('.tab-btn[data-target="tab-details"]');
+    if (detailsBtn) detailsBtn.click();
+    setTimeout(() => {
+      const target = document.querySelector('details.file-report[data-file-index="' + idx + '"]');
+      if (target) {
+        document.querySelectorAll('details.file-report').forEach(d => d.open = false);
+        target.open = true;
+        target.scrollIntoView({behavior: 'smooth', block: 'start'});
+      }
+    }, 50);
+  }
+  document.querySelectorAll('.models-row').forEach(row => {
+    row.addEventListener('click', () => showFileDetails(row.dataset.fileIndex));
+  });
+
+  // ---- Export PDF: expand all details + print (works outside pywebview too) ----
+  const pdfBtn = document.getElementById('export-pdf');
+  if (pdfBtn) pdfBtn.addEventListener('click', () => {
+    const detailsList = Array.from(document.querySelectorAll('details'));
+    const prevOpen = detailsList.map(d => d.open);
+    detailsList.forEach(d => { d.open = true; });
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        detailsList.forEach((d, i) => { d.open = prevOpen[i]; });
+      }, 800);
+    }, 100);
+  });
+
+  // Filter inputs — match on element row text; detail row visibility follows its pair
+  document.querySelectorAll('.filter-input').forEach(input => {
+    input.addEventListener('input', () => {
+      const target = document.getElementById(input.dataset.target);
+      if (!target) return;
+      const q = input.value.toLowerCase();
+      const rows = Array.from(target.querySelectorAll('tbody tr'));
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        if (r.classList.contains('issue-detail-row')) continue;
+        const matches = q === '' || r.textContent.toLowerCase().indexOf(q) !== -1;
+        r.style.display = matches ? '' : 'none';
+        if (i + 1 < rows.length && rows[i + 1].classList.contains('issue-detail-row')) {
+          rows[i + 1].style.display = matches ? '' : 'none';
+        }
+      }
+    });
+  });
+
+  // Sortable tables — keeps element + issue-detail row pairs together
+  document.querySelectorAll('table thead th').forEach((th, idx) => {
+    if (th.classList.contains('th-expand')) return;  // chevron column not sortable
+    const ind = document.createElement('span');
+    ind.className = 'sort-indicator';
+    ind.textContent = '↕';
+    th.appendChild(ind);
+    th.dataset.sortDir = '';
+    th.addEventListener('click', () => {
+      const table = th.closest('table');
+      const tbody = table.tBodies[0];
+      const rows = Array.from(tbody.rows);
+      const dir = th.dataset.sortDir === 'asc' ? 'desc' : 'asc';
+      table.querySelectorAll('thead th').forEach(other => {
+        other.dataset.sortDir = '';
+        const i = other.querySelector('.sort-indicator');
+        if (i) i.textContent = '↕';
+      });
+      th.dataset.sortDir = dir;
+      ind.textContent = dir === 'asc' ? '↑' : '↓';
+
+      // Pair element rows with their following issue-detail rows
+      const groups = [];
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        if (r.classList.contains('issue-detail-row')) continue;
+        const group = [r];
+        if (i + 1 < rows.length && rows[i + 1].classList.contains('issue-detail-row')) {
+          group.push(rows[i + 1]);
+          i++;
+        }
+        groups.push(group);
+      }
+      groups.sort((a, b) => {
+        const av = a[0].cells[idx].textContent.trim();
+        const bv = b[0].cells[idx].textContent.trim();
+        const an = parseFloat(av), bn = parseFloat(bv);
+        if (!isNaN(an) && !isNaN(bn)) return dir === 'asc' ? an - bn : bn - an;
+        return dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+      groups.forEach(g => g.forEach(r => tbody.appendChild(r)));
+    });
+  });
+
+  // Element row expand/collapse — click anywhere on row to toggle issue detail
+  document.querySelectorAll('.element-row.has-issues').forEach(row => {
+    row.addEventListener('click', () => {
+      const detail = row.nextElementSibling;
+      if (!detail || !detail.classList.contains('issue-detail-row')) return;
+      if (detail.hasAttribute('hidden')) {
+        detail.removeAttribute('hidden');
+        row.classList.add('expanded');
+      } else {
+        detail.setAttribute('hidden', '');
+        row.classList.remove('expanded');
+      }
+    });
+  });
+
+
+  // Chart colors
+  const GREEN = '#16a34a', AMBER = '#d97706', RED = '#dc2626', BLUE = '#2563eb';
+  const GREEN_BG = 'rgba(22,163,74,0.7)', AMBER_BG = 'rgba(217,119,6,0.7)',
+        RED_BG = 'rgba(220,38,38,0.7)', BLUE_BG = 'rgba(37,99,235,0.7)';
+  function passRateColor(p) { return p >= 80 ? GREEN_BG : (p >= 50 ? AMBER_BG : RED_BG); }
+
+  // Chart 1: Pass rate by file (horizontal bar)
+  const truncate = (s, n) => (s.length > n ? s.slice(0, n - 1) + '…' : s);
+  if (DATA.files.length > 0) {
+    const passRateCanvas = document.getElementById('passRateChart');
+    const passRateCard = passRateCanvas.parentElement;
+    const computedHeight = Math.max(280, DATA.files.length * 36 + 60);
+    passRateCard.style.height = computedHeight + 'px';
+    passRateCanvas.style.maxHeight = 'none';
+
+    const passRateLabels = {
+      id: 'passRateLabels',
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        const meta = chart.getDatasetMeta(0);
+        const values = chart.data.datasets[0].data;
+        ctx.save();
+        ctx.font = '600 11px -apple-system, "Segoe UI", Roboto, sans-serif';
+        ctx.textBaseline = 'middle';
+        meta.data.forEach((bar, i) => {
+          const v = values[i];
+          const text = v.toFixed(1) + '%';
+          const insideBar = bar.x - bar.base > 50;
+          ctx.fillStyle = insideBar ? '#ffffff' : '#374151';
+          ctx.textAlign = insideBar ? 'right' : 'left';
+          const x = insideBar ? bar.x - 8 : bar.x + 6;
+          ctx.fillText(text, x, bar.y);
+        });
+        ctx.restore();
+      },
+    };
+
+    new Chart(passRateCanvas, {
+      type: 'bar',
+      data: {
+        labels: DATA.files.map(f => truncate(f.filename, 30)),
+        datasets: [{
+          label: 'Pass Rate %',
+          data: DATA.files.map(f => f.pass_rate),
+          backgroundColor: DATA.files.map(f => passRateColor(f.pass_rate)),
+          borderWidth: 0,
+          borderRadius: 6,
+          borderSkipped: false,
+          barPercentage: 0.7,
+          categoryPercentage: 0.75,
+        }],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { right: 56 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: items => DATA.files[items[0].dataIndex].filename,
+              label: ctx => 'Pass rate: ' + ctx.parsed.x.toFixed(1) + '%',
+            },
+          },
+        },
+        scales: {
+          x: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' }, grid: { color: '#f3f4f6' } },
+          y: { grid: { display: false } },
+        },
+      },
+      plugins: [passRateLabels],
+    });
+  }
+
+  // Chart 2: Issue distribution by check type (doughnut)
+  const checkPalette = ['#dc2626', '#d97706', '#ca8a04', '#16a34a', '#0891b2', '#2563eb', '#7c3aed', '#db2777'];
+
+  const doughnutLabels = {
+    id: 'doughnutLabels',
+    afterDatasetsDraw(chart) {
+      const ctx = chart.ctx;
+      const meta = chart.getDatasetMeta(0);
+      const data = chart.data.datasets[0].data;
+      ctx.save();
+      ctx.font = '600 12px -apple-system, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      meta.data.forEach((arc, i) => {
+        const v = data[i];
+        if (!v) return;
+        const pos = arc.tooltipPosition();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeText(String(v), pos.x, pos.y);
+        ctx.fillText(String(v), pos.x, pos.y);
+      });
+      ctx.restore();
+    },
+  };
+
+  new Chart(document.getElementById('issueDistChart'), {
+    type: 'doughnut',
+    data: {
+      labels: DATA.issue_dist.map(d => d.name),
+      datasets: [{
+        data: DATA.issue_dist.map(d => d.count),
+        backgroundColor: checkPalette.slice(0, DATA.issue_dist.length),
+        borderWidth: 1,
+        borderColor: '#fff',
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 11 } } } },
+    },
+    plugins: [doughnutLabels],
+  });
+
+  // Chart 3: Severity breakdown per file (stacked bar)
+  const stackedBarLabels = {
+    id: 'stackedBarLabels',
+    afterDatasetsDraw(chart) {
+      const ctx = chart.ctx;
+      ctx.save();
+      ctx.font = '600 11px -apple-system, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      chart.data.datasets.forEach((dataset, dsi) => {
+        const meta = chart.getDatasetMeta(dsi);
+        meta.data.forEach((bar, i) => {
+          const v = dataset.data[i];
+          if (!v) return;
+          const segHeight = Math.abs(bar.base - bar.y);
+          if (segHeight < 16) return;
+          const midY = (bar.base + bar.y) / 2;
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeText(String(v), bar.x, midY);
+          ctx.fillText(String(v), bar.x, midY);
+        });
+      });
+      ctx.restore();
+    },
+  };
+
+  new Chart(document.getElementById('severityStackChart'), {
+    type: 'bar',
+    data: {
+      labels: DATA.files.map(f => truncate(f.filename, 30)),
+      datasets: [
+        { label: 'Errors', data: DATA.files.map(f => f.errors), backgroundColor: RED_BG, borderColor: RED, borderWidth: 1 },
+        { label: 'Warnings', data: DATA.files.map(f => f.warnings), backgroundColor: AMBER_BG, borderColor: AMBER, borderWidth: 1 },
+        { label: 'Info', data: DATA.files.map(f => f.info), backgroundColor: BLUE_BG, borderColor: BLUE, borderWidth: 1 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { title: items => DATA.files[items[0].dataIndex].filename } },
+      },
+      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } },
+    },
+    plugins: [stackedBarLabels],
+  });
+})();
+</script>
+</body>
+</html>
